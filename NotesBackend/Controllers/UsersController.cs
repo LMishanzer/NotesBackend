@@ -30,6 +30,7 @@ namespace NotesBackend.Controllers
             {
                 var claims = new List<Claim>
                 {
+                    new (ClaimTypes.Sid, user.Id),
                     new (ClaimTypes.Name, user.Username),
                     new (ClaimTypes.Role, "Administrator")
                 };
@@ -69,7 +70,7 @@ namespace NotesBackend.Controllers
                 return Ok(user);
             }
             
-            return BadRequest(new { message = "Username or/and password is/are incorrect" });
+            return Unauthorized(new { message = "Username or/and password is/are incorrect" });
         }
 
         [AllowAnonymous]
@@ -78,7 +79,7 @@ namespace NotesBackend.Controllers
             var user = await _userService.Register(credentials.Username, credentials.Password);
 
             if (user == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
+                return BadRequest(new { message = "User with such username already exists" });
 
             return Ok(user);
         }

@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using NotesBackend.Models;
+using NotesBackend.Models.Dto;
 using NotesBackend.Storage;
 
 namespace NotesBackend.Controllers
@@ -22,7 +25,9 @@ namespace NotesBackend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllNotes()
         {
-            return Ok(await _storage.GetAllNotes());
+            var userId = User.Claims.Single(c => c.Type == ClaimTypes.Sid).Value;
+
+            return Ok(await _storage.GetUserNotes(userId));
         }
 
         [HttpGet]
@@ -33,11 +38,13 @@ namespace NotesBackend.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateNote([FromBody] Note note)
+        public async Task<IActionResult> CreateNote([FromBody] NoteDto note)
         {
             try
             {
-                return Ok(await _storage.CreateNote(note));
+                var userId = User.Claims.Single(c => c.Type == ClaimTypes.Sid).Value;
+
+                return Ok(await _storage.CreateNote(note, userId));
             }
             catch (NullReferenceException)
             {
@@ -46,18 +53,48 @@ namespace NotesBackend.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateNote([FromBody] Note note)
+        public async Task<IActionResult> UpdateNote([FromBody] Note noteUpdate)
         {
-            await _storage.UpdateNote(note);
-            return Ok();
+            try
+            {
+                var userId = User.Claims.Single(c => c.Type == ClaimTypes.Sid).Value;
+                var note = await _storage.GetNote(noteUpdate.Id);
+
+                if (note?.UserId == userId)
+                {
+                    await _storage.UpdateNote(noteUpdate);
+                    return Ok();
+                }
+
+                return BadRequest(new {exception = "Cannot find a note with such ID"});
+            }
+            catch (Exception)
+            {
+                return BadRequest(new {exception = "Cannot find a note with such ID"});
+            }
         }
 
         [HttpDelete]
         [Route("/api/v1/[controller]/[action]/{id}")]
         public async Task<IActionResult> DeleteNote(string id)
         {
-            await _storage.DeleteNote(id);
-            return Ok();
+            try
+            {
+                var userId = User.Claims.Single(c => c.Type == ClaimTypes.Sid).Value;
+                var noteToDelete = await _storage.GetNote(id);
+
+                if (noteToDelete?.UserId == userId)
+                {
+                    await _storage.DeleteNote(id);
+                    return Ok();
+                }
+
+                return BadRequest(new {exception = "Cannot find a note with such ID"});
+            }
+            catch (Exception)
+            {
+                return BadRequest(new {exception = "Cannot find a note with such ID"});
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NotesBackend.Models;
+using NotesBackend.Models.Dto;
 
 namespace NotesBackend.Storage
 {
@@ -31,9 +32,10 @@ namespace NotesBackend.Storage
             return await _notesContext.Notes.Where(n => n.UserId == userId).ToListAsync();
         }
 
-        public async Task<Note> CreateNote(Note note)
+        public async Task<Note> CreateNote(NoteDto noteDto, string userId)
         {
-            note.Id = Guid.NewGuid().ToString();
+            var note = new Note(noteDto) {Id = Guid.NewGuid().ToString(), UserId = userId};
+
             var result = await _notesContext.Notes.AddAsync(note);
             await _notesContext.SaveChangesAsync();
             return result.Entity;
@@ -44,8 +46,6 @@ namespace NotesBackend.Storage
             var noteToUpdate = await _notesContext.Notes.SingleAsync(n => n.Id == note.Id);
             noteToUpdate.Title = note.Title;
             noteToUpdate.Content = note.Content;
-            noteToUpdate.UserId = note.UserId;
-            noteToUpdate.User = note.User;
             await _notesContext.SaveChangesAsync();
         }
 
@@ -67,6 +67,13 @@ namespace NotesBackend.Storage
         public async Task<User> GetUserByCredentials(string username, string password)
         {
             return await _notesContext.Users.SingleOrDefaultAsync(u => u.Username == username && u.Password == password);
+        }
+
+        public async Task<bool> IsUserExists(string username)
+        {
+            var user = await _notesContext.Users.SingleOrDefaultAsync(u => u.Username == username);
+
+            return user != null;
         }
 
         public async Task<ICollection<User>> GetAllUsers()

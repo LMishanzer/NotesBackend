@@ -26,6 +26,11 @@ namespace NotesBackend.Services
 
         public async Task<User> Register(string username, string password)
         {
+            if (await _storage.IsUserExists(username))
+            {
+                return null;
+            }
+
             return await _storage.CreateUser(new User
             {
                 Username = username,

@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
+using NotesBackend.Models.Dto;
 
 namespace NotesBackend.Models
 {
-    public class User
+    public class User : UserCredentials
     {
         public string Id { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
         public ICollection<Note> Notes { get; set; }
 
         public User WithoutPassword()
